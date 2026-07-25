@@ -243,8 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
      Supabase → Project Settings → API. Until you do, the site
      runs in Demo mode (any details work, saved on this device only).
      ================================================== */
-  const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const SUPABASE_URL = 'https://fzifpldwscfryyiylbok.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_BvO7BSGqjaAqugwIhCTp9A_p9_3Z7cu';
 
   const isSupabaseConfigured =
     typeof window.supabase !== 'undefined' &&
