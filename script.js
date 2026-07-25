@@ -23,13 +23,27 @@ const ICONS = {
 };
 
 const DEPARTMENTS = [
-  { id: "finance",   name: "Finance",       needsPayment: true,  remarks: "Requires fee balance to be settled first." },
-  { id: "library",   name: "Library",       needsPayment: false, remarks: "Confirms all borrowed materials returned." },
-  { id: "academic",  name: "Academic Dept", needsPayment: false, remarks: "Confirms coursework & unit completion." },
-  { id: "hostel",    name: "Hostel",        needsPayment: false, remarks: "Confirms room handover & no damages." },
-  { id: "games",     name: "Games",         needsPayment: false, remarks: "Confirms sports equipment returned." },
-  { id: "registrar", name: "Registrar",     needsPayment: false, remarks: "Final sign-off after all departments clear." }
+  { id: "finance",   name: "Finance",       needsPayment: true,  remarks: "Requires fee balance to be settled first.",
+    office: "Admin Block, Room 12", contact: "finance@kiriri.ac.ke",
+    requirements: ["No outstanding fee balance", "Latest fee statement acknowledged", "Any deposit refunds processed"] },
+  { id: "library",   name: "Library",       needsPayment: false, remarks: "Confirms all borrowed materials returned.",
+    office: "Main Library, Ground Floor", contact: "library@kiriri.ac.ke",
+    requirements: ["All borrowed books returned", "No pending library fines", "Library card surrendered"] },
+  { id: "academic",  name: "Academic Dept", needsPayment: false, remarks: "Confirms coursework & unit completion.",
+    office: "IT Dept, Room 4", contact: "it-dept@kiriri.ac.ke",
+    requirements: ["All units examined & graded", "Project / attachment report submitted", "No incomplete grades"] },
+  { id: "hostel",    name: "Hostel",        needsPayment: false, remarks: "Confirms room handover & no damages.",
+    office: "Hostel Warden's Office", contact: "hostel@kiriri.ac.ke",
+    requirements: ["Room keys returned", "No damages to furniture/fittings", "Hostel fee balance cleared"] },
+  { id: "games",     name: "Games",         needsPayment: false, remarks: "Confirms sports equipment returned.",
+    office: "Sports Complex Office", contact: "games@kiriri.ac.ke",
+    requirements: ["Sports kit / equipment returned", "No pending team commitments"] },
+  { id: "registrar", name: "Registrar",     needsPayment: false, remarks: "Final sign-off after all departments clear.",
+    office: "Registrar's Office, Admin Block", contact: "registrar@kiriri.ac.ke",
+    requirements: ["All five departments cleared", "Original admission documents verified"] }
 ];
+
+const PROCESS_STEPS = ["Request submitted", "Officer review", "Decision recorded", "Passport stamped"];
 
 // state: pending -> review -> approved/rejected
 const state = {
@@ -47,7 +61,7 @@ const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 const nowStr = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-function toast(message, tone = "gold") {
+function toast(message, tone = "mint") {
   const host = $("#toast-host");
   const el = document.createElement("div");
   el.className = `toast ${tone}`;
@@ -62,6 +76,10 @@ function toast(message, tone = "gold") {
 function pushNotification(text, tone = "amber") {
   state.notifications.unshift({ text, tone, time: nowStr() });
   renderNotifications();
+  const bell = $("#bell-btn");
+  bell.classList.remove("ring");
+  void bell.offsetWidth; // restart animation
+  bell.classList.add("ring");
 }
 
 function renderNotifications() {
@@ -81,6 +99,37 @@ function renderNotifications() {
 }
 
 /* =========================================================
+   HERO: stat counters + scroll reveal (cover page)
+   ========================================================= */
+function animateCounters() {
+  $$(".stat-num").forEach(el => {
+    const target = Number(el.dataset.count);
+    const duration = 1200;
+    const start = performance.now();
+    function tick(t) {
+      const progress = Math.min((t - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(target * eased).toLocaleString();
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+animateCounters();
+
+function setupScrollReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("in-view");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  $$(".reveal").forEach(el => observer.observe(el));
+}
+
+/* =========================================================
    LOGIN FLOW
    ========================================================= */
 $("#login-form").addEventListener("submit", e => {
@@ -91,7 +140,6 @@ $("#login-form").addEventListener("submit", e => {
 
   setTimeout(() => {
     $("#cover").classList.add("hide");
-    $("#welcome-name").textContent = STUDENT.shortName.toUpperCase();
     const flash = $("#welcome-flash");
     flash.classList.add("show");
 
@@ -121,6 +169,7 @@ function initDashboard() {
   updateProgress();
   renderNotifications();
   pushNotification("Passport unlocked. Six departments await your clearance request.", "amber");
+  setupScrollReveal();
 }
 
 /* ---------- notification tray toggle ---------- */
@@ -135,10 +184,28 @@ $("#clear-notifs").addEventListener("click", () => { state.notifications = []; r
 $("#admin-toggle").addEventListener("click", () => {
   const student = $("#student-view"), officer = $("#officer-view");
   const toStudent = officer.hidden === false;
-  student.hidden = !toStudent ? true : false;
-  officer.hidden = toStudent;
-  $("#admin-toggle span").textContent = toStudent ? "Officer view" : "Student view";
-  if (!toStudent) renderOfficerView();
+  const incoming = toStudent ? officer : student;
+  const outgoing = toStudent ? student : officer;
+
+  outgoing.style.opacity = "0";
+  outgoing.style.transform = "translateY(8px)";
+  setTimeout(() => {
+    student.hidden = !toStudent ? true : false;
+    officer.hidden = toStudent;
+    $("#admin-toggle span").textContent = toStudent ? "Officer view" : "Student view";
+    if (!toStudent) renderOfficerView();
+    incoming.style.opacity = "0";
+    incoming.style.transform = "translateY(8px)";
+    requestAnimationFrame(() => {
+      incoming.style.opacity = "1";
+      incoming.style.transform = "translateY(0)";
+    });
+  }, 180);
+});
+
+/* ---------- floating help button ---------- */
+$("#fab-help").addEventListener("click", () => {
+  toast("Need a hand? Email it-dept@kiriri.ac.ke or visit the ICT help desk, Room 4.", "mint");
 });
 
 /* =========================================================
@@ -157,11 +224,19 @@ function renderDeptGrid() {
       <span class="status-pill ${locked ? "locked" : s.status}">${locked ? "Locked" : labelFor(s.status)}</span>
       <p class="dept-remarks">${s.remarks || d.remarks}</p>
       ${actionButton(d, s, locked)}
+      <p class="tap-hint">Tap card for process &amp; requirements →</p>
     </div>`;
   }).join("");
 
   $$(".dept-action[data-action]").forEach(btn => {
-    btn.addEventListener("click", () => handleDeptAction(btn.dataset.dept, btn.dataset.action));
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      handleDeptAction(btn.dataset.dept, btn.dataset.action);
+    });
+  });
+
+  $$(".dept-card").forEach(card => {
+    card.addEventListener("click", () => openDeptModal(card.dataset.dept));
   });
 }
 
@@ -195,6 +270,7 @@ function handleDeptAction(deptId, action) {
   s.remarks = "Awaiting departmental officer review.";
   renderDeptGrid();
   renderOfficerView();
+  if ($("#dept-modal").classList.contains("open")) renderModalFor(deptId);
   toast(`Request sent to ${dept.name}.`, "gold");
   pushNotification(`${dept.name} clearance request submitted — awaiting officer review.`, "amber");
 
@@ -209,9 +285,87 @@ function handleDeptAction(deptId, action) {
     renderDeptGrid();
     renderOfficerView();
     updateProgress();
+    if ($("#dept-modal").classList.contains("open")) renderModalFor(deptId);
     toast(`${dept.name}: ${approve ? "Approved ✓" : "Returned — action needed"}`, approve ? "green" : "red");
     pushNotification(`${dept.name} clearance ${approve ? "approved" : "rejected"}.`, approve ? "green" : "red");
   }, delay);
+}
+
+/* =========================================================
+   DEPARTMENT PROCESS MODAL
+   ========================================================= */
+let currentModalDept = null;
+
+function openDeptModal(deptId) {
+  currentModalDept = deptId;
+  renderModalFor(deptId);
+  $("#dept-modal").classList.add("open");
+}
+
+function closeDeptModal() {
+  $("#dept-modal").classList.remove("open");
+  currentModalDept = null;
+}
+$("#modal-close").addEventListener("click", closeDeptModal);
+$("#dept-modal").addEventListener("click", e => { if (e.target.id === "dept-modal") closeDeptModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDeptModal(); });
+
+function stepIndexFor(status) {
+  // 0 not started, 1 submitted, 2 review, 3 decided+stamped(if approved)
+  if (status === "pending") return 0;
+  if (status === "review") return 2;
+  if (status === "approved") return 4;
+  if (status === "rejected") return 3;
+  return 0;
+}
+
+function renderModalFor(deptId) {
+  const d = DEPARTMENTS.find(x => x.id === deptId);
+  const s = state.depts[deptId];
+  const locked = d.needsPayment && !state.paid && s.status === "pending";
+
+  $("#modal-icon").innerHTML = ICONS[d.id];
+  $("#modal-title").textContent = d.name;
+  const statusEl = $("#modal-status");
+  statusEl.className = `status-pill ${locked ? "locked" : s.status}`;
+  statusEl.textContent = locked ? "Locked" : labelFor(s.status);
+
+  const currentStep = stepIndexFor(s.status);
+  const rejected = s.status === "rejected";
+  $("#modal-timeline").innerHTML = PROCESS_STEPS.map((label, i) => {
+    const stepNum = i + 1;
+    let cls = "";
+    if (rejected && stepNum === 3) cls = "rejected";
+    else if (stepNum < currentStep || (stepNum === currentStep && s.status === "approved")) cls = "done";
+    else if (stepNum === currentStep) cls = "active";
+    const timeNote = stepNum === 1 && s.submittedAt ? s.submittedAt : (stepNum === 3 && (s.status==="approved"||s.status==="rejected") ? "Decision logged" : "");
+    return `
+      <div class="tl-step ${cls}">
+        <div class="tl-dot">${cls === "done" ? "✓" : cls === "rejected" ? "✕" : stepNum}</div>
+        <div class="tl-label"><strong>${label}</strong><span>${timeNote}</span></div>
+      </div>`;
+  }).join("");
+
+  $("#modal-reqs").innerHTML = d.requirements.map(r => `<li>${r}</li>`).join("");
+  $("#modal-office").textContent = d.office;
+  $("#modal-contact").textContent = d.contact;
+  $("#modal-remark").textContent = s.remarks ? `Officer note: ${s.remarks}` : "No remarks recorded yet.";
+
+  const actionBtn = $("#modal-action");
+  if (s.status === "approved") {
+    actionBtn.textContent = "Stamped ✓ — nothing more to do";
+    actionBtn.disabled = true;
+  } else if (s.status === "review") {
+    actionBtn.textContent = "Awaiting officer…";
+    actionBtn.disabled = true;
+  } else if (locked) {
+    actionBtn.textContent = "Pay finance balance first";
+    actionBtn.disabled = true;
+  } else {
+    actionBtn.textContent = s.status === "rejected" ? "Resubmit request" : "Submit clearance request";
+    actionBtn.disabled = false;
+  }
+  actionBtn.onclick = () => handleDeptAction(deptId, s.status === "rejected" ? "resubmit" : "submit");
 }
 
 /* =========================================================
@@ -268,6 +422,7 @@ $("#payment-form").addEventListener("submit", e => {
     btn.disabled = false;
     btn.textContent = "Payment complete";
     renderDeptGrid();
+    if (currentModalDept === "finance") renderModalFor("finance");
     toast("M-Pesa payment confirmed. Finance department is now unlocked.", "green");
     pushNotification(`Payment received via Daraja API — receipt ${receipt}.`, "green");
   }, 2600);
@@ -288,7 +443,7 @@ function unlockCertificate() {
   const qrHost = $("#cert-qr");
   qrHost.innerHTML = "";
   if (window.QRCode) {
-    new QRCode(qrHost, { text: qrData, width: 128, height: 128, colorDark: "#4A1420", colorLight: "#F3ECD8" });
+    new QRCode(qrHost, { text: qrData, width: 128, height: 128, colorDark: "#0F3D2E", colorLight: "#E4FBEE" });
   } else {
     qrHost.innerHTML = `<p class="muted">QR unavailable offline — verification ID above still applies.</p>`;
   }
@@ -345,6 +500,7 @@ function officerAction(deptId, action) {
   renderOfficerView();
   renderDeptGrid();
   updateProgress();
+  if (currentModalDept === deptId) renderModalFor(deptId);
   toast(`${dept.name} manually ${action === "approve" ? "approved" : "rejected"} by officer.`, action === "approve" ? "green" : "red");
   pushNotification(`Officer ${action === "approve" ? "approved" : "rejected"} ${dept.name} clearance.`, action === "approve" ? "green" : "red");
 }
@@ -373,7 +529,7 @@ function fireConfetti() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const ctx = canvas.getContext("2d");
-  const colors = ["#B8923D", "#D9B970", "#6B1F2A", "#2F5233", "#F3ECD8"];
+  const colors = ["#8FE6B4", "#1B7A4D", "#0F3D2E", "#C9A227", "#E4FBEE"];
   const pieces = Array.from({ length: 120 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * canvas.height * 0.4,
@@ -408,4 +564,3 @@ window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 });
-    
