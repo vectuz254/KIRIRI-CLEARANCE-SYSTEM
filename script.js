@@ -117,6 +117,53 @@ function animateCounters() {
 }
 animateCounters();
 
+/* =========================================================
+   HERO PHOTO SLIDER (auto crossfade between the two images)
+   ========================================================= */
+function setupHeroSlider() {
+  const slides = $$(".hero-slide");
+  if (slides.length < 2) return;
+  let i = 0;
+  setInterval(() => {
+    slides[i].classList.remove("active");
+    i = (i + 1) % slides.length;
+    slides[i].classList.add("active");
+  }, 5000);
+}
+setupHeroSlider();
+
+/* =========================================================
+   TESTIMONIAL CAROUSEL
+   ========================================================= */
+function setupTestimonials() {
+  const quotes = $$(".testimonial");
+  const dotsHost = $("#testimonial-dots");
+  if (!quotes.length) return;
+  let i = 0;
+
+  dotsHost.innerHTML = quotes.map((_, idx) => `<button data-i="${idx}" class="${idx === 0 ? "active" : ""}"></button>`).join("");
+  const dots = $$(".testimonial-dots button");
+
+  function show(idx) {
+    quotes[i].classList.remove("active");
+    dots[i].classList.remove("active");
+    i = idx;
+    quotes[i].classList.add("active");
+    dots[i].classList.add("active");
+  }
+
+  let timer = setInterval(() => show((i + 1) % quotes.length), 6000);
+
+  dots.forEach(dot => {
+    dot.addEventListener("click", () => {
+      clearInterval(timer);
+      show(Number(dot.dataset.i));
+      timer = setInterval(() => show((i + 1) % quotes.length), 6000);
+    });
+  });
+}
+setupTestimonials();
+
 function setupScrollReveal() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -147,6 +194,7 @@ $("#login-form").addEventListener("submit", e => {
       flash.classList.remove("show");
       $("#cover").hidden = true;
       $("#dashboard").hidden = false;
+      window.scrollTo(0, 0); // avoid landing mid-page from the taller cover's scroll position
       initDashboard();
       toast(`Welcome back, ${STUDENT.shortName}! Your passport is ready.`, "green");
     }, 950);
