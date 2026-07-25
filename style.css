@@ -64,6 +64,21 @@ a, button, input{ font-family: inherit; }
 .muted{ color: var(--ink-soft); font-size: 14px; }
 
 /* =========================================================
+   HERO PHOTO SLIDER (cover background)
+   ========================================================= */
+.hero-slider{ position:absolute; inset:0; overflow:hidden; z-index:0; }
+.hero-slide{
+  position:absolute; inset:0; background-size:cover; background-position:center;
+  opacity:0; transform: scale(1.06); transition: opacity 1.4s ease, transform 8s ease;
+}
+.hero-slide.active{ opacity:0.34; transform: scale(1); }
+.hero-slider-overlay{
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse at top left, rgba(143,230,180,0.16), transparent 55%),
+              linear-gradient(180deg, var(--green-950) 0%, rgba(15,61,46,0.88) 55%, var(--green-900) 100%);
+}
+
+/* =========================================================
    FLOATING AMBIENT SHAPES (used on cover + dashboard)
    ========================================================= */
 .floaters{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
@@ -165,13 +180,23 @@ a, button, input{ font-family: inherit; }
 .stat-num{ display:block; font-family: var(--font-display); font-size:28px; font-weight:700; color: var(--mint-300); }
 .stat-lbl{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color: rgba(255,255,255,0.55); font-family: var(--font-mono); }
 
+.testimonial-slider{ position:relative; max-width:460px; min-height:104px; padding-bottom:22px; }
 .testimonial{
   margin:0; padding:14px 16px; border-left:3px solid var(--mint-300);
   background: rgba(255,255,255,0.05); border-radius: 0 var(--radius) var(--radius) 0;
-  max-width:460px;
+  position:absolute; inset:0; width:100%;
+  opacity:0; transform: translateX(12px); pointer-events:none;
+  transition: opacity .5s ease, transform .5s ease;
 }
+.testimonial.active{ opacity:1; transform: translateX(0); pointer-events:all; }
 .testimonial p{ margin:0 0 6px; font-family: var(--font-display); font-style:italic; font-size:15.5px; line-height:1.4; }
 .testimonial cite{ font-size:11.5px; color: rgba(255,255,255,0.55); font-style:normal; }
+.testimonial-dots{ display:flex; gap:6px; position:absolute; left:16px; bottom:0; }
+.testimonial-dots button{
+  width:6px; height:6px; border-radius:50%; border:none; background: rgba(255,255,255,0.3);
+  cursor:pointer; padding:0; transition: all .25s ease;
+}
+.testimonial-dots button.active{ width:18px; border-radius:4px; background: var(--mint-300); }
 
 /* login card */
 .cover-right{ position:relative; z-index:1; }
